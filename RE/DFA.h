@@ -42,15 +42,17 @@ public:
 
 class DFA : public NFA
 {
-public:
+protected:
 	DFAStates states,
 		finalStates;
 	DFAState *startingState,
 		***lookup_table;
 	string state_table;
 	size_t *min_dist,
-		*max_dist,
-		minLength, maxLength;
+		*max_dist;
+
+public:
+	size_t minLength, maxLength;
 
 	DFA ( string );
 

@@ -46,7 +46,7 @@ public:
 
 class NFA
 {
-public:
+protected:
 	string
 		expression,
 		postfix,
@@ -60,10 +60,10 @@ public:
 
 	NFA ( uchar_t, int );
 
+public:
 	NFA ( string );
 
 private:
-
 	void adjustNum ( );
 
 	void concat ( uchar_t, NFA* );
