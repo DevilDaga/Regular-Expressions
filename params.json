@@ -1,0 +1,1 @@
+{"name":"Regular-expressions","tagline":"","body":"# Regular-Expressions\r\n\r\nConvert a Regular Expression into a DFA/NFA.\r\nState tables and graphs will be saved to DFA.gv and NFA.gv files in DOT format.\r\n","google":"","note":"Don't delete this file! It's used internally to help with page regeneration."}
