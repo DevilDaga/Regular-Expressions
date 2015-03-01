@@ -80,6 +80,9 @@
   <ItemGroup>
     <Text Include="test inputs.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Release\RE.exe" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
