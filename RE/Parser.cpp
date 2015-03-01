@@ -1,7 +1,5 @@
 #include "Parser.h"
 
-//awawawawawawawawaw
-
 Parser::Parser ( string infix, Colour colMatch, Colour colOther )
 	: DFA ( expand ( infix ) ), colMatch ( colMatch ), colOther ( colOther )
 { }
