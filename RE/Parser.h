@@ -3,8 +3,6 @@
 #include <ctime>
 #include <cstdlib>
 
-typedef pair<string, size_t> match;
-
 class Parser : public DFA
 {
 public:
@@ -17,6 +15,8 @@ public:
 	Parser ( string, Colour, Colour );
 
 private:
+typedef pair<string, size_t> match;
+
 	vector<match> parse ( string );
 
 public:

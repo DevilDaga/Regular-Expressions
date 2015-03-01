@@ -12,7 +12,7 @@ Parser::Parser ( string infix )
 	: DFA ( expand ( infix ) ), colMatch ( LIGHT_GREEN ), colOther ( LIGHT_GRAY )
 { }
 
-vector<match> Parser::parse ( string str )
+vector<Parser::match> Parser::parse ( string str )
 {
 	auto length = str.length ( );
 	vector<match> result;
