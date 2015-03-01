@@ -1,0 +1,11 @@
+[ab]*a[ab][ab][ab][ab][ab][ab][ab][ab][ab]
+(aa|b)*(bb|a)*
+http://(www\.)?.+\.(com|net|ly|st)/.{4,16}
+http://(www\.)?(adf\.ly|sh\.st|linkbucks\.com|bc\.vc|linkshrink\.net)/.{5,8}
+([a-z]|[A-Z])([.\._]{0, 31})@([a-z]{2, 32})\.(com|net|org)
+a+(b*|c)|d*aacd
+([a-z]|[A-Z]){4}(a|A|e|E|i|I|o|O|u|U)+
+(aaaaa)+|(aaaaaaa)+
+http://(adfly|site2|site3|shst)+
+http://[a-z]+:[0-9]+
+ a | an | the |I |([a-z]|[A-Z]|[0-9])+(ing|ed|ant|th|nd|ly|en|st|re|er) | ([a-z]|[A-Z])*(as|on)
