@@ -1,5 +1,4 @@
 #include "DFA.h"
-#include <hash_set>
 
 //#define PRINTFULLKEY
 //#define _TEST_CASE
