@@ -1,7 +1,6 @@
 #include "DFA.h"
 
 //#define PRINTFULLKEY
-//#define _TEST_CASE
 
 DFAState::DFAState ( NFAState *nfaState, size_t max )
 {
