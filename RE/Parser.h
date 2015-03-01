@@ -16,8 +16,10 @@ public:
 
 	Parser ( string, Colour, Colour );
 
+private:
 	vector<match> parse ( string );
 
+public:
 	bool verify ( string );
 
 	void print_matches ( string );
