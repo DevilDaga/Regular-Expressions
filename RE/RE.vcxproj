@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{641F69CD-AA45-45BF-97C5-57B083A83E57}</ProjectGuid>
     <RootNamespace>RE</RootNamespace>
+    <ProjectName>RE to FSM</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
