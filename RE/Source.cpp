@@ -1,9 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "Parser.h"
 #include <stdio.h>
-#include <random>
-#include <chrono>
-#include <atomic>
 
 // http://hackingoff.com/compilers/regular-expression-to-nfa-dfa
 // To verify simple DFAs
