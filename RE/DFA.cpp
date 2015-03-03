@@ -236,7 +236,7 @@ void DFA::Minimize ( )							// 21.1% time			:)))))		EDIT: 4.8%  >:D
 	{
 		auto state = states[ i ];
 		lookup_table[ i ] = new DFAState*[ 256 ];
-		memset ( lookup_table[ i ], 0, 256 * sizeof lookup_table[ 0 ] );
+		NULLIFY ( lookup_table[ i ], 256 );
 		for each ( auto e in state->outgoing )
 			lookup_table[ i ][ e.first ] = e.second;
 	}
