@@ -33,6 +33,10 @@ public:
 
 	bool removeOutgoing ( uchar_t, DFAState* );
 
+	void updateIncoming ( DFAState*, DFAState* );
+
+	void updateOutgoing ( uchar_t, DFAState* );
+
 	void EpsillonClosure ( size_t );
 
 	DFAState* nextState ( uchar_t );

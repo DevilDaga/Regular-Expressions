@@ -7,6 +7,7 @@
 #include <chrono>
 
 #define SETCOLOUR(c)		SetConsoleTextAttribute( GetStdHandle ( STD_OUTPUT_HANDLE ), (c) )
+#define NULLIFY(dest,size)	memset((dest), 0, (size) * sizeof (dest)[ 0 ] )
 
 typedef enum Colour
 {

@@ -277,7 +277,7 @@ void NFA::build_tables ( )
 	{
 		auto state = states[ i ];
 		lookup_table[ i ] = new NFAState*[ 256 ];
-		memset ( lookup_table[ i ], 0, 256 * sizeof lookup_table[ 0 ] );
+		NULLIFY ( lookup_table[ i ], 256 );
 		for each ( auto e in state->outgoing )		// Filling the useless EPSILON transitions too...
 			lookup_table[ i ][ e.first ] = e.second;
 	}
@@ -296,12 +296,15 @@ void NFA::build_tables ( )
 		name += ( state->isFinal ) ? "*" : " ";
 		name.append ( getKey ( state->num ) );
 		ss_state_table << name.append ( WIDTH - name.length ( ) - 5, ' ' );
+		NFAState::edge *state_outgoing = state->outgoing.data ( );
+		auto size_outgoing = state->outgoing.size ( );
 		for each ( uchar_t symbol in symbols )
 		{
 			string out = "";
-			for each ( auto edge in state->outgoing )
-				if ( edge.first == symbol )
-					out += getKey ( edge.second->num ) + ",";
+			out.reserve ( WIDTH + 1 );
+			for ( size_t i = 0; i != size_outgoing; ++i )
+				if ( state_outgoing[ i ].first == symbol )
+					out += getKey ( state_outgoing[ i ].second->num ) + ",";
 			if ( out.length ( ) )
 			{
 				out.pop_back ( );

@@ -35,9 +35,9 @@ DFAState::DFAState ( NFAStates nfaStates, size_t max )
 bool DFAState::addOutgoing ( uchar_t symbol, DFAState *state )
 {
 	auto next = make_pair ( symbol, state );
-	for each ( edge e in outgoing )
-		if ( e.first == symbol )
-			return false;
+	//for each ( edge e in outgoing )
+	//	if ( e.first == symbol )
+	//		return false;
 	this->outgoing.push_back ( next );
 	state->incoming.push_back ( make_pair ( symbol, this ) );
 	return true;
@@ -57,7 +57,7 @@ bool DFAState::removeIncoming ( uchar_t symbol, DFAState *state )
 	return false;
 }
 
-bool DFAState::removeOutgoing ( uchar_t symbol, DFAState* state )
+bool DFAState::removeOutgoing ( uchar_t symbol, DFAState *state )
 {
 	auto compareWith = make_pair ( symbol, state );
 	for ( size_t i = 0; i != outgoing.size ( ); ++i )
@@ -71,16 +71,37 @@ bool DFAState::removeOutgoing ( uchar_t symbol, DFAState* state )
 	return false;
 }
 
+void DFAState::updateIncoming ( DFAState *prev, DFAState *next )
+{
+	edge *buff_incoming = incoming.data ( );
+	auto size = incoming.size ( );
+	for ( size_t i = 0; i < size; ++i )
+		if ( buff_incoming[ i ].second == prev )
+			buff_incoming[ i ].second = next;
+}
+
+void DFAState::updateOutgoing ( uchar_t symbol, DFAState *next )
+{
+	edge *buff_outgoing = outgoing.data ( );
+	auto size = outgoing.size ( );
+	for ( size_t i = 0; i < size; ++i )
+		if ( buff_outgoing[ i ].first == symbol )
+			buff_outgoing[ i ].second = next;
+}
+
 void DFAState::EpsillonClosure ( size_t max )
 {
 	bool *visited = new bool[ max ];
-	memset ( visited, 0, max * sizeof ( bool ) );
+	NULLIFY ( visited, max );
 	for ( size_t i = 0; i != myNFAStates.size ( ); ++i )
 	{
 		auto state = myNFAStates[ i ];
 		isFinal |= state->isFinal;
-		for each ( auto it in state->outgoingEpsilon )
+		NFAState **state_epsilon = state->outgoingEpsilon.data ( );
+		auto size = state->outgoingEpsilon.size ( );
+		for ( size_t i = 0; i != size; ++i )		// 'for each' is slow.
 		{
+			auto it = state_epsilon[ i ];
 			if ( !visited[ it->num ] )
 			{
 				myNFAStates.push_back ( it );
@@ -90,6 +111,26 @@ void DFAState::EpsillonClosure ( size_t max )
 	}
 	delete[ ] visited;
 }
+
+//void DFAState::EpsillonClosure ( size_t max )
+//{
+//	bool *visited = new bool[ max ];
+//	memset ( visited, 0, max * sizeof ( bool ) );
+//	for ( size_t i = 0; i != myNFAStates.size ( ); ++i )
+//	{
+//		auto state = myNFAStates[ i ];
+//		isFinal |= state->isFinal;
+//		for each ( auto it in state->outgoingEpsilon )
+//		{
+//			if ( !visited[ it->num ] )
+//			{
+//				myNFAStates.push_back ( it );
+//				visited[ it->num ] = true;
+//			}
+//		}
+//	}
+//	delete[ ] visited;
+//}
 
 DFAState* DFAState::nextState ( uchar_t symbol )
 {
@@ -138,35 +179,30 @@ void DFA::build_using_memory ( )
 	vector<size_t*> initial_nfa_states_table;
 	auto nfa_states_count = __super::states.size ( );
 	auto starting_entry = new size_t[ nfa_states_count ];
-	memset ( starting_entry, 0, nfa_states_count * sizeof ( bool ) );
+	NULLIFY ( starting_entry, nfa_states_count );
 	size_t max_infas = 0;
 	for each ( auto nfaState in startingState->myInitialNFAStates )
 		starting_entry[ max_infas++ ] = nfaState->num;
 	max_infas = GetMaxINFAS ( ) + 1;
+	size_t max_infas_yet = 0;
 	initial_nfa_states_table.push_back ( starting_entry );
 	auto visited = new bool[ nfa_states_count ];
 	for ( size_t i = 0; i != states.size ( ); ++i )		// Subset construction.
 	{
 		auto state = states[ i ];
+		auto size_myNFAStates = state->myNFAStates.size ( );
+		NFAState **state_myNFAStates = state->myNFAStates.data ( );
 		for each ( uchar_t symbol in symbols )
 		{
 			NFAStates initialNFAStates;
+			initialNFAStates.reserve ( max_infas );
 			auto infas = new size_t[ max_infas ];
-			memset ( infas, 0, max_infas * sizeof ( size_t ) );
-			memset ( visited, 0, nfa_states_count * sizeof ( bool ) );
+			NULLIFY ( infas, max_infas );
+			NULLIFY ( visited, nfa_states_count );
 			size_t count = 0;
-#ifndef _DEBUG
-			for each ( auto nfaState in state->myNFAStates )				// Faster
-#else
-			auto size_myNFAStates = state->myNFAStates.size ( );
-			for ( size_t j = 0; j != size_myNFAStates; ++j )				// Even faster?		Or not?		Faster only in _DEBUG?
-#endif
+			for ( size_t j = 0; j != size_myNFAStates; ++j )
 			{
-#ifdef _DEBUG
-				auto temp = __super::lookup_table[ state->myNFAStates[ j ]->num ][ symbol ];
-#else
-				auto temp = __super::lookup_table[ nfaState->num ][ symbol ];
-#endif
+				auto temp = __super::lookup_table[ state_myNFAStates[ j ]->num ][ symbol ];
 				if ( temp && !visited[ temp->num ] )
 				{
 					initialNFAStates.push_back ( temp );
@@ -176,12 +212,14 @@ void DFA::build_using_memory ( )
 			}
 			if ( !count )
 				continue;
+			max_infas_yet = max ( count, max_infas_yet );
 			DFAState *tempDFAState = nullptr;
 			bool flag = false;
 			auto size = states.size ( );
+			size_t **buffered_infas_table = initial_nfa_states_table.data ( );
 			for ( size_t j = 0; j != size; ++j )
 			{
-				if ( !memcmp ( initial_nfa_states_table[ j ], infas, max_infas * sizeof size_t ) )
+				if ( !memcmp ( buffered_infas_table[ j ], infas, max_infas_yet * sizeof size_t ) )
 				{
 					tempDFAState = states[ j ];									// Re-use.
 					flag = true;
@@ -210,7 +248,7 @@ void DFA::Minimize ( )							// 21.1% time			:)))))		EDIT: 4.8%  >:D
 	{
 		auto state = states[ i ];
 		lookup_table[ i ] = new DFAState*[ 256 ];
-		memset ( lookup_table[ i ], 0, 256 * sizeof lookup_table[ 0 ] );
+		NULLIFY ( lookup_table[ i ], 256 );
 		for each ( auto e in state->outgoing )
 			lookup_table[ i ][ e.first ] = e.second;
 	}
@@ -219,8 +257,10 @@ void DFA::Minimize ( )							// 21.1% time			:)))))		EDIT: 4.8%  >:D
 		lt_range = symbols.back ( ) - lt_start + 1;
 	shorten_keys ( );
 	size_t deleted = 0;
+	auto visited = new bool[ states.size ( ) ];
 	for ( size_t i = 0; i != states.size ( ); ++i )		// O(n^2)   could be O(nlog n) ? Could be O(N) with hashing ? Nah. All good.
 	{
+		NULLIFY ( visited, states.size ( ) );
 		auto state = states[ i ];
 		for ( size_t j = 0; j != i; j++ )
 		{
@@ -234,18 +274,20 @@ void DFA::Minimize ( )							// 21.1% time			:)))))		EDIT: 4.8%  >:D
 				 )
 				 )			// 71.7% time.. NO MORE!		1.9% time..  Better to read from raw memory!
 			{
-				//while ( false );					// For debugging
 				for each ( auto e in state->incoming )
 				{
-					e.second->removeOutgoing ( e.first, state );			// Might be wrong..... or not..
-					e.second->addOutgoing ( e.first, compareWith );
+					e.second->updateOutgoing ( e.first, compareWith );
 					last_changed = min ( last_changed, e.second->num - deleted );	// First 'probably unsafe' node..
 					LOOKUP ( e.second )[ e.first ] = compareWith;
 				}
 				for each ( auto e in state->outgoing )
 				{
-					e.second->removeIncoming ( e.first, state );			// This is being a bitch.
-					compareWith->addOutgoing ( e.first, e.second );
+					if ( visited[ e.second->num ] )
+						continue;
+					if ( e.second == state )
+						e.second = compareWith;
+					e.second->updateIncoming ( state, compareWith );
+					visited[ e.second->num ] = true;
 					last_changed = min ( last_changed, e.second->num - deleted );
 					LOOKUP ( compareWith )[ e.first ] = e.second;
 				}
@@ -295,7 +337,7 @@ void DFA::build_tables ( )
 	{
 		auto state = states[ i ];
 		lookup_table[ i ] = new DFAState*[ 256 ];
-		memset ( lookup_table[ i ], 0, 256 * sizeof lookup_table[ 0 ] );
+		NULLIFY ( lookup_table[ i ], 256 );
 		for each ( auto e in state->outgoing )
 			lookup_table[ i ][ e.first ] = e.second;
 	}
@@ -344,7 +386,7 @@ void DFA::build_min_costs ( )
 {
 	auto visited = new size_t[ states.size ( ) ];					// For a greedy search
 	min_dist = new size_t[ states.size ( ) ];
-	memset ( visited, 0, states.size ( ) * sizeof ( int ) );
+	NULLIFY ( visited, states.size ( ) );
 	DFAStates temp, temp2;
 	for each ( auto fstate in finalStates )
 	{
@@ -382,10 +424,9 @@ void DFA::build_max_costs ( )						// Kinda proud of this one..
 {
 	size_t size = states.size ( );
 	max_dist = new size_t[ size ];
-	memset ( max_dist, 0, size * sizeof ( int ) );
-	//memcpy ( max_dist, min_dist, states.size ( ) * sizeof ( int ) );
+	NULLIFY ( max_dist, size );
 	auto visited = new bool[ size ];
-	memset ( visited, 0, size * sizeof ( bool ) );
+	NULLIFY ( visited, size );
 	DFAStates safe;
 	vector<pair<DFAState::edge, DFAState*>> backup;
 	for each ( auto state in states )				// Can probably make it finalStates..
@@ -411,7 +452,7 @@ void DFA::build_max_costs ( )						// Kinda proud of this one..
 
 	// Need a DFS here for max_costs..   Start from final states? EDIT: Yes
 
-	memset ( visited, 0, size * sizeof ( bool ) );
+	NULLIFY ( visited, size );
 	for each ( auto fstate in finalStates )			// DFS from ALL final states
 	{
 		vector<pair<DFAState*, size_t>> stack;
@@ -464,7 +505,7 @@ void DFA::print_graph ( )
 	{
 		string allMyOutgoing = "{";
 		string *edge_labes = new string[ size ];
-		memset ( visited, 0, size * sizeof ( bool ) );
+		NULLIFY ( visited, size );
 		for each ( auto e in state->outgoing )
 		{
 			edge_labes[ e.second->num ].push_back ( e.first );
