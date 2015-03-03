@@ -35,9 +35,9 @@ DFAState::DFAState ( NFAStates nfaStates, size_t max )
 bool DFAState::addOutgoing ( uchar_t symbol, DFAState *state )
 {
 	auto next = make_pair ( symbol, state );
-	//for each ( edge e in outgoing )
-	//	if ( e.first == symbol )
-	//		return false;
+	for each ( edge e in outgoing )
+		if ( e.first == symbol )
+			return false;
 	this->outgoing.push_back ( next );
 	state->incoming.push_back ( make_pair ( symbol, this ) );
 	return true;
@@ -85,8 +85,16 @@ void DFAState::updateOutgoing ( uchar_t symbol, DFAState *next )
 	edge *buff_outgoing = outgoing.data ( );
 	auto size = outgoing.size ( );
 	for ( size_t i = 0; i < size; ++i )
+	{
 		if ( buff_outgoing[ i ].first == symbol )
+		{
 			buff_outgoing[ i ].second = next;
+			auto rev = make_pair ( symbol, this );
+			if ( !contains ( next->incoming, rev ) )
+				next->incoming.push_back ( rev );
+			return;
+		}
+	}
 }
 
 void DFAState::EpsillonClosure ( size_t max )
@@ -111,26 +119,6 @@ void DFAState::EpsillonClosure ( size_t max )
 	}
 	delete[ ] visited;
 }
-
-//void DFAState::EpsillonClosure ( size_t max )
-//{
-//	bool *visited = new bool[ max ];
-//	memset ( visited, 0, max * sizeof ( bool ) );
-//	for ( size_t i = 0; i != myNFAStates.size ( ); ++i )
-//	{
-//		auto state = myNFAStates[ i ];
-//		isFinal |= state->isFinal;
-//		for each ( auto it in state->outgoingEpsilon )
-//		{
-//			if ( !visited[ it->num ] )
-//			{
-//				myNFAStates.push_back ( it );
-//				visited[ it->num ] = true;
-//			}
-//		}
-//	}
-//	delete[ ] visited;
-//}
 
 DFAState* DFAState::nextState ( uchar_t symbol )
 {
@@ -160,7 +148,7 @@ void DFA::buildDFA ( )						// Already minimized! >:]	EDIT: No..  It's not..
 	startingState = new DFAState ( __super::startingState,
 								   __super::states.size ( ) );
 	states.push_back ( startingState );
-	build_using_memory ( );
+	SubsetConstruction ( );
 	auto end = chrono::high_resolution_clock::now ( );
 	std::cout << "DFA built in:\t"
 		<< chrono::duration_cast<chrono::milliseconds>( end - start ).count ( )
@@ -174,7 +162,7 @@ void DFA::buildDFA ( )						// Already minimized! >:]	EDIT: No..  It's not..
 	build_tables ( );
 }
 
-void DFA::build_using_memory ( )
+void DFA::SubsetConstruction ( )
 {
 	vector<size_t*> initial_nfa_states_table;
 	auto nfa_states_count = __super::states.size ( );
@@ -187,7 +175,7 @@ void DFA::build_using_memory ( )
 	size_t max_infas_yet = 0;
 	initial_nfa_states_table.push_back ( starting_entry );
 	auto visited = new bool[ nfa_states_count ];
-	for ( size_t i = 0; i != states.size ( ); ++i )		// Subset construction.
+	for ( size_t i = 0; i != states.size ( ); ++i )
 	{
 		auto state = states[ i ];
 		auto size_myNFAStates = state->myNFAStates.size ( );
@@ -219,7 +207,7 @@ void DFA::build_using_memory ( )
 			size_t **buffered_infas_table = initial_nfa_states_table.data ( );
 			for ( size_t j = 0; j != size; ++j )
 			{
-				if ( !memcmp ( buffered_infas_table[ j ], infas, max_infas_yet * sizeof size_t ) )
+				if ( !memcmp ( buffered_infas_table[ j ], infas, max_infas * sizeof size_t ) )
 				{
 					tempDFAState = states[ j ];									// Re-use.
 					flag = true;
@@ -248,7 +236,7 @@ void DFA::Minimize ( )							// 21.1% time			:)))))		EDIT: 4.8%  >:D
 	{
 		auto state = states[ i ];
 		lookup_table[ i ] = new DFAState*[ 256 ];
-		NULLIFY ( lookup_table[ i ], 256 );
+		memset ( lookup_table[ i ], 0, 256 * sizeof lookup_table[ 0 ] );
 		for each ( auto e in state->outgoing )
 			lookup_table[ i ][ e.first ] = e.second;
 	}
@@ -257,10 +245,8 @@ void DFA::Minimize ( )							// 21.1% time			:)))))		EDIT: 4.8%  >:D
 		lt_range = symbols.back ( ) - lt_start + 1;
 	shorten_keys ( );
 	size_t deleted = 0;
-	auto visited = new bool[ states.size ( ) ];
 	for ( size_t i = 0; i != states.size ( ); ++i )		// O(n^2)   could be O(nlog n) ? Could be O(N) with hashing ? Nah. All good.
 	{
-		NULLIFY ( visited, states.size ( ) );
 		auto state = states[ i ];
 		for ( size_t j = 0; j != i; j++ )
 		{
@@ -276,18 +262,15 @@ void DFA::Minimize ( )							// 21.1% time			:)))))		EDIT: 4.8%  >:D
 			{
 				for each ( auto e in state->incoming )
 				{
-					e.second->updateOutgoing ( e.first, compareWith );
+					e.second->removeOutgoing ( e.first, state );			// Might be wrong..... or not..
+					e.second->addOutgoing ( e.first, compareWith );
 					last_changed = min ( last_changed, e.second->num - deleted );	// First 'probably unsafe' node..
 					LOOKUP ( e.second )[ e.first ] = compareWith;
 				}
 				for each ( auto e in state->outgoing )
 				{
-					if ( visited[ e.second->num ] )
-						continue;
-					if ( e.second == state )
-						e.second = compareWith;
-					e.second->updateIncoming ( state, compareWith );
-					visited[ e.second->num ] = true;
+					e.second->removeIncoming ( e.first, state );			// This is being a bitch.
+					compareWith->addOutgoing ( e.first, e.second );
 					last_changed = min ( last_changed, e.second->num - deleted );
 					LOOKUP ( compareWith )[ e.first ] = e.second;
 				}

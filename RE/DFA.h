@@ -66,7 +66,7 @@ private:
 
 	size_t GetMaxINFAS ( );
 
-	void build_using_memory ( );
+	void SubsetConstruction ( );
 
 	void Minimize ( );
 
